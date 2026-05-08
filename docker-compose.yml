@@ -1,0 +1,127 @@
+services:
+  # PostgreSQL para Gateway Service
+  postgres-gateway:
+    image: postgres:15-alpine
+    container_name: postgres-gateway
+    environment:
+      POSTGRES_DB: gateway_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - gateway_db_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  # PostgreSQL para Request Service
+  postgres-request:
+    image: postgres:15-alpine
+    container_name: postgres-request
+    environment:
+      POSTGRES_DB: service_a_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - request_db_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  # PostgreSQL para Chat Service
+  postgres-chat:
+    image: postgres:15-alpine
+    container_name: postgres-chat
+    environment:
+      POSTGRES_DB: service_b_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - chat_db_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  # Gateway Service
+  gateway-service:
+    build:
+      context: .
+      dockerfile: gateway-service/Dockerfile
+    container_name: gateway-service
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-gateway:5432/gateway_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      REQUEST_SERVICE_URL: http://request-service:8081
+      CHAT_SERVICE_URL: http://chat-service:8082
+      JWT_SECRET: mySecretKeyForDevelopmentPurposesMustBeAtLeast32CharsLongForHS256
+      CORS_ALLOWED_ORIGIN: http://localhost:4200
+    depends_on:
+      - postgres-gateway
+    networks:
+      - app-network
+
+  # Request Service
+  request-service:
+    build:
+      context: .
+      dockerfile: request-service/Dockerfile
+    container_name: request-service
+    ports:
+      - "8081:8081"
+    environment:
+      PORT: 8081
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-request:5432/service_a_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      - postgres-request
+    networks:
+      - app-network
+
+  # Chat Service
+  chat-service:
+    build:
+      context: .
+      dockerfile: chat-service/Dockerfile
+    container_name: chat-service
+    ports:
+      - "8082:8082"
+    environment:
+      PORT: 8082
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-chat:5432/service_b_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      - postgres-chat
+    networks:
+      - app-network
+
+  # Frontend Angular
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "4200:8080"
+    environment:
+      API_BASE_URL: http://localhost:8080
+    depends_on:
+      - gateway-service
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  gateway_db_data:
+  request_db_data:
+  chat_db_data:

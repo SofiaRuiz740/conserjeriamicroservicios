@@ -1,0 +1,22 @@
+INICIO RÁPIDO - CONSERJERÍA VIRTUAL
+
+1. COMPILAR (5-10 minutos)
+   mvn clean package -DskipTests -q
+
+2. INICIAR (30 segundos)
+   docker-compose down -v
+   docker-compose up -d
+
+3. VERIFICAR (10 segundos)
+   docker-compose ps
+
+4. ACCEDER
+   Frontend:  http://localhost:4200
+   Email:     test@example.com
+   Password:  password123
+
+5. PROBAR
+   Importar postman-collection.json en Postman
+   Usar variable base_url = http://localhost:8080/api
+
+PARA MÁS DETALLES, VER RUN_ME_FIRST.md
