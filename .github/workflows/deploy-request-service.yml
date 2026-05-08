@@ -66,4 +66,4 @@ jobs:
           --platform managed \
           --allow-unauthenticated \
           --add-cloudsql-instances ${{ secrets.INSTANCE_CONNECTION_NAME }} \
-          --set-env-vars="PORT=8081,SPRING_DATASOURCE_URL=jdbc:postgresql:///service_a_db?cloudSqlInstance=${{ secrets.INSTANCE_CONNECTION_NAME }}&socketFactory=com.google.cloud.sql.postgres.SocketFactory,SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }},SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}"
+          --set-env-vars="PORT=8081,SPRING_DATASOURCE_URL=jdbc:postgresql:///requestdb?cloudSqlInstance=${{ secrets.INSTANCE_CONNECTION_NAME }}&socketFactory=com.google.cloud.sql.postgres.SocketFactory,SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }},SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }}"
