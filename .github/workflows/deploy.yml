@@ -1,0 +1,77 @@
+name: Deploy Microservices to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGION: ${{ secrets.GCP_REGION }}
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REPOSITORY: conserjeria-docker
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: |
+          gcloud auth configure-docker $REGION-docker.pkg.dev
+
+      - name: Build and push request-service
+        run: |
+          docker build -f request-service/Dockerfile -t $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/request-service:latest .
+          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/request-service:latest
+
+      - name: Deploy request-service
+        run: |
+          gcloud run deploy request-service \
+            --image $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/request-service:latest \
+            --region $REGION \
+            --platform managed \
+            --allow-unauthenticated \
+            --add-cloudsql-instances ${{ secrets.INSTANCE_CONNECTION_NAME }} \
+            --set-env-vars SPRING_DATASOURCE_URL="${{ secrets.REQUEST_DB_URL }}",SPRING_DATASOURCE_USERNAME="${{ secrets.SPRING_DATASOURCE_USERNAME }}",SPRING_DATASOURCE_PASSWORD="${{ secrets.SPRING_DATASOURCE_PASSWORD }}"
+
+      - name: Build and push chat-service
+        run: |
+          docker build -f chat-service/Dockerfile -t $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/chat-service:latest .
+          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/chat-service:latest
+
+      - name: Deploy chat-service
+        run: |
+          gcloud run deploy chat-service \
+            --image $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/chat-service:latest \
+            --region $REGION \
+            --platform managed \
+            --allow-unauthenticated \
+            --add-cloudsql-instances ${{ secrets.INSTANCE_CONNECTION_NAME }} \
+            --set-env-vars SPRING_DATASOURCE_URL="${{ secrets.CHAT_DB_URL }}",SPRING_DATASOURCE_USERNAME="${{ secrets.SPRING_DATASOURCE_USERNAME }}",SPRING_DATASOURCE_PASSWORD="${{ secrets.SPRING_DATASOURCE_PASSWORD }}"
+
+      - name: Build and push gateway-service
+        run: |
+          docker build -f gateway-service/Dockerfile -t $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/gateway-service:latest .
+          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/gateway-service:latest
+
+      - name: Deploy gateway-service
+        run: |
+          gcloud run deploy gateway-service \
+            --image $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/gateway-service:latest \
+            --region $REGION \
+            --platform managed \
+            --allow-unauthenticated \
+            --add-cloudsql-instances ${{ secrets.INSTANCE_CONNECTION_NAME }} \
+            --set-env-vars SPRING_DATASOURCE_URL="${{ secrets.GATEWAY_DB_URL }}",SPRING_DATASOURCE_USERNAME="${{ secrets.SPRING_DATASOURCE_USERNAME }}",SPRING_DATASOURCE_PASSWORD="${{ secrets.SPRING_DATASOURCE_PASSWORD }}",JWT_SECRET="${{ secrets.JWT_SECRET }}"
