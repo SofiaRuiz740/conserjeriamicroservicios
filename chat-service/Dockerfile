@@ -11,7 +11,6 @@ RUN mvn package -pl chat-service -DskipTests
 # Runtime stage
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
-COPY --from=builder /build/chat-service/target/chat-service-1.0.0.jar app.jar
+COPY --from=builder /build/chat-service/target/*.jar app.jar
 EXPOSE 8082
-ENV PORT=8082
 CMD ["java", "-jar", "app.jar"]

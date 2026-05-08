@@ -11,7 +11,6 @@ RUN mvn package -pl gateway-service -DskipTests
 # Runtime stage
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
-COPY --from=builder /build/gateway-service/target/gateway-service-1.0.0.jar app.jar
+COPY --from=builder /build/gateway-service/target/*.jar app.jar
 EXPOSE 8080
-ENV PORT=8080
 CMD ["java", "-jar", "app.jar"]
